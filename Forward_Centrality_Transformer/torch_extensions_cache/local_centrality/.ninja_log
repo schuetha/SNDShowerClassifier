@@ -1,0 +1,4 @@
+# ninja log v7
+0	489	1773090517000000001	local_forward_degree.o	40ccdd705b1e42b9
+3	139962	1773090517000000001	local_forward_degree_cuda.cuda.o	e2b92ed416cc98
+139975	140650	1773090657000000001	local_centrality.so	b8dc2c40082dd5ba

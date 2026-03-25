@@ -1,0 +1,11 @@
+executable = /afs/cern.ch/user/s/schuetha/work/private/GNN/FCGNN/Data_converted.sh
+log = /afs/cern.ch/user/s/schuetha/work/private/GNN/Data_converted.log
+error = /afs/cern.ch/user/s/schuetha/work/private/GNN/Data_converted.error
+output = /afs/cern.ch/user/s/schuetha/work/private/GNN/Data_converted.out
+request_gpus    = 1
+should_transfer_files = YES
+request_CPUs = 5
+request_memory  = 32 GB
++AccountingGroup = "group_u_SNDLHC.users"
++JobFlavour = "nextweek"
+queue 1

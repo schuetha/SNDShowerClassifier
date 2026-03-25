@@ -1,0 +1,30 @@
+# ================================================================
+# Step 5: GravNet (2 layers, full) + centrality + GMT
+# → full model with all components
+# ================================================================
+model:
+  layers:
+    - type: SNDShowerClassifier
+      name: SNDShower_1
+      params:
+        in_ch: 8
+        hidden_ch: 64
+        space_dim: 4
+        prop_dim: 32
+        k: 16
+        n_gravnet_layers: 2
+        n_mlp_layers: 2
+        gmt_heads: 4
+        gmt_k: 5
+        dropout: 0.3
+        num_classes: 4
+        use_dgn_aggregation: True
+        use_centrality: True
+        use_reachability: False
+        use_station_spread: True
+
+training:
+  lr: 1e-3
+  weight_decay: 1e-5
+  scheduler: ReduceLROnPlateau
+  patience: 10
