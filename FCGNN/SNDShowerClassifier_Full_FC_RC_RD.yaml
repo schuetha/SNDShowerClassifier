@@ -4,7 +4,7 @@
 # ================================================================
 model:
   layers:
-    - type: SNDShowerClassifier_V2
+    - type: SNDShowerClassifier
       name: SNDShower_1
       params:
         in_ch: 8
