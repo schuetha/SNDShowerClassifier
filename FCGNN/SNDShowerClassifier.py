@@ -34,17 +34,17 @@ _centrality_fns = {}
 def _get_centrality_fns():
     if not _centrality_fns:
         if torch.cuda.is_available():
-            from Forward_Centrality_Transformer.forward_centrality import (
+            from Forward_Centrality.forward_centrality import (
                 forward_centrality as reach_ext,
             )
-            from Forward_Centrality_Transformer.local_forward_degree import (
+            from Forward_Centrality.local_forward_degree import (
                 local_centrality,
             )
         else:
-            from Forward_Centrality_Transformer.forward_reachability import (
+            from Forward_Centrality.forward_reachability import (
                 forward_reachability as reach_ext,
             )
-            from Forward_Centrality_Transformer.forward_local_centrality import (
+            from Forward_Centrality.forward_local_centrality import (
                 forward_local_centrality as local_centrality,
             )
         _centrality_fns["reach"] = reach_ext

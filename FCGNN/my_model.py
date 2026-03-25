@@ -10,7 +10,6 @@ from torch_geometric.data import Batch
 # from FCGNN.Dir_local_GravNet import DirGravNetConv_local
 # from FCGNN.GraphGPS_local import GraphGPS_local
 from FCGNN.SNDShowerClassifier import SNDShowerClassifier
-from FCGNN.SNDShowerClassifier_V2 import SNDShowerClassifier as SNDShowerClassifier_V2
 from FCGNN.Edge_conv import Edge_conv
 
 CTOR_MAP = {

@@ -35,7 +35,7 @@ source /afs/cern.ch/user/s/schuetha/work/private/GNN/ML_env/bin/activate
 # -----------------------------
 
 # Default: persistent cache (good for interactive / repeated runs)
-export TORCH_EXTENSIONS_DIR=/afs/cern.ch/work/s/schuetha/private/GNN/Forward_Centrality_Transformer/torch_extensions_cache
+export TORCH_EXTENSIONS_DIR=/afs/cern.ch/work/s/schuetha/private/GNN/Forward_Centrality/torch_extensions_cache
 
 # If running under HTCondor, prefer job-local scratch (faster, avoids AFS issues)
 if [ -n "${_CONDOR_SCRATCH_DIR:-}" ]; then
