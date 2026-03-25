@@ -1,0 +1,19 @@
+executable = /afs/cern.ch/user/s/schuetha/work/private/GNN/FCGNN/train_flavour_SNDShowerClassifier.sh
+epoch=150
+model=FCGNN/SNDShowerClassifier_2_flavour.yaml
+out_path=SNDShowerClassifier_2_flavour
+name=SNDShowerClassifier_2_flavour
+max_job=16
+batch_size=128
+arguments = $(epoch) $(model) $(out_path) $(max_job) $(batch_size)
+log = /afs/cern.ch/user/s/schuetha/work/private/GNN/train_GNN_$(epoch)_$(name).log
+error = /afs/cern.ch/user/s/schuetha/work/private/GNN/train_GNN_$(epoch)_$(name).error
+output = /afs/cern.ch/user/s/schuetha/work/private/GNN/train_GNN_$(epoch)_$(name).out
+request_gpus    = 1
+requirements    = regexp("V100", TARGET.GPUs_DeviceName)
+should_transfer_files = YES
+request_CPUs = 1
+request_memory  = 32 GB
++AccountingGroup = "group_u_SNDLHC.users"
++JobFlavour = "nextweek"
+queue 1

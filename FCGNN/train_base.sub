@@ -1,0 +1,19 @@
+executable = /afs/cern.ch/user/s/schuetha/work/private/GNN/FCGNN/train_model.sh
+epoch=150
+model=FCGNN/base_model.yaml
+out_path=base_model_new_300cut
+name=base_model_new_300cut
+max_job=16
+batch_size=128
+arguments = $(epoch) $(model) $(out_path) $(max_job) $(batch_size)
+log = /afs/cern.ch/user/s/schuetha/work/private/GNN/train_GNN_$(epoch)_$(name).log
+error = /afs/cern.ch/user/s/schuetha/work/private/GNN/train_GNN_$(epoch)_$(name).error
+output = /afs/cern.ch/user/s/schuetha/work/private/GNN/train_GNN_$(epoch)_$(name).out
+request_gpus    = 1
+requirements    = regexp("A100", TARGET.GPUs_DeviceName)
+should_transfer_files = YES
+request_CPUs = 1
+request_memory  = 32 GB
++AccountingGroup = "group_u_SNDLHC.users"
++JobFlavour = "nextweek"
+queue 1

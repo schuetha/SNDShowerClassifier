@@ -1,0 +1,46 @@
+model:
+  layers:
+    - type: GravNetConv
+      name: g1
+      params:
+        in_channels: 8
+        out_channels: 64          
+        space_dimensions: 4
+        propagate_dimensions: 8   
+        k: 16
+
+    - type: ReLU
+      params: {}
+
+    - type: GravNetConv
+      name: g2
+      params:
+        in_channels: 64           
+        out_channels: 64          
+        space_dimensions: 4
+        propagate_dimensions: 8   
+        k: 16
+
+    - type: ReLU
+      params: {}
+
+    - type: global_mean_pool
+
+    - type: Linear
+      name: lin1
+      params:
+        in_features: 64           
+        out_features: 64          
+
+    - type: ReLU
+      params: {}
+
+    - type: Dropout
+      params:
+        p: 0.3
+
+    - type: Linear
+      name: lin2
+      params:
+        in_features: 64           
+        out_features: 3
