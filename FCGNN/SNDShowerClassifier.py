@@ -157,8 +157,12 @@ class GravNetDGNLayer(nn.Module):
     Single GravNet layer with optional DGN-style Z-directional aggregation.
 
     Aggregations:
-        Always:   mean, max           (standard GravNet)
-        Optional: smooth_Z, deriv_Z   (DGN-inspired, if use_dgn=True)
+        Always:   mean, max                       (standard GravNet)
+        Optional: B_av (smooth_Z), B_dx (deriv_Z) (DGN, if use_dgn=True)
+
+    DGN aggregators follow Beaini et al. 2021, eq. 5 & 6, with F defined by
+    the known physical Z-direction (shower propagation axis) rather than
+    Laplacian eigenvectors.
     """
 
     def __init__(self, in_ch, out_ch, space_dim, prop_dim, k, use_dgn=True):
@@ -170,12 +174,11 @@ class GravNetDGNLayer(nn.Module):
         self.lin_h = Linear(in_ch, prop_dim)
         self.lin_skip = Linear(in_ch, out_ch, bias=False)
 
-        n_agg = 4 if use_dgn else 2  # [mean, max] or [mean, max, smooth, deriv]
+        n_agg = 4 if use_dgn else 2
         self.lin_agg = Linear(n_agg * prop_dim, out_ch)
         self.norm = nn.BatchNorm1d(out_ch)
         self.act = nn.ReLU()
 
-        # Store edge_index for centrality (Block 2)
         self._edge_index = None
 
     def forward(self, x, z, batch):
@@ -192,24 +195,51 @@ class GravNetDGNLayer(nn.Module):
         ew = torch.exp(-10.0 * ew)
 
         src, dst = edge_index
-        m = h[src] * ew.unsqueeze(-1)
+        m = h[src] * ew.unsqueeze(-1)  # messages: (E, prop_dim)
 
         # ─── Standard aggregations (always) ───
         agg_mean = scatter_mean(m, dst, dim=0, dim_size=N)
         agg_max = scatter_max(m, dst, dim=0, dim_size=N)[0]
 
         if self.use_dgn:
-            # ─── Z-directional field (DGN-inspired) ───
-            dz = z[src] - z[dst]
-            dz_abs_sum = scatter_sum(dz.abs(), dst, dim=0, dim_size=N)
-            F = dz / (dz_abs_sum[dst] + 1e-8)
+            # ═══════════════════════════════════════════════════════════
+            # DGN Z-directional field
+            #
+            # Raw field:      F_{i,j} = z_j - z_i
+            # Row-L1 norm:    F̂_{i,j} = F_{i,j} / Σ_j |F_{i,j}|
+            #
+            # Note: edges are directed src→dst in PyG. We aggregate AT dst,
+            # so for each dst node i, its row Ĥ_{i,:} is built from edges
+            # where dst == i, i.e. incoming edges. The "row" node is dst.
+            # ═══════════════════════════════════════════════════════════
+            dz = z[src] - z[dst]                              # (E,)
+            # Row-wise L1 norm: sum |dz| over edges grouped by dst (the row node)
+            row_L1 = scatter_sum(dz.abs(), dst, dim=0, dim_size=N)
+            F_hat = dz / (row_L1[dst] + 1e-8)                 # (E,) — this is F̂
 
-            agg_smooth = scatter_mean(
-                m * F.abs().unsqueeze(-1), dst, dim=0, dim_size=N
+            # ─── B_av: smoothing (eq. 5) ───
+            # (B_av · m)_i = Σ_{j ∈ N(i)} |F̂_{i,j}| · m_j
+            # F̂ is already row-L1-normalized, so weights |F̂| sum to 1 per row.
+            # Use scatter_SUM, not scatter_mean.
+            agg_smooth = scatter_sum(
+                m * F_hat.abs().unsqueeze(-1), dst, dim=0, dim_size=N
             )
-            agg_deriv = scatter_sum(
-                m * F.unsqueeze(-1), dst, dim=0, dim_size=N
-            )
+
+            # ─── B_dx: centered directional derivative (eq. 6) ───
+            # (B_dx · x)_i = Σ_j F̂_{i,j} · m_j  -  (Σ_j F̂_{j,i}) · x_i
+            #              └─ off-diagonal term ┘    └ diagonal correction ┘
+            #
+            # Column sum Σ_j F̂_{j,i}: for each node i, sum F̂ over edges where
+            # i appears as the SOURCE (i.e. i is column index in another row).
+            # → scatter on `src` with dim_size=N.
+            col_sum = scatter_sum(F_hat, src, dim=0, dim_size=N)   # (N,)
+
+            off_diag = scatter_sum(
+                m * F_hat.unsqueeze(-1), dst, dim=0, dim_size=N
+            )                                                      # (N, prop_dim)
+            diag_corr = col_sum.unsqueeze(-1) * h                  # (N, prop_dim)
+
+            agg_deriv = off_diag - diag_corr
 
             agg_all = torch.cat(
                 [agg_mean, agg_max, agg_smooth, agg_deriv], dim=-1
@@ -221,7 +251,6 @@ class GravNetDGNLayer(nn.Module):
         out = self.act(self.norm(out))
 
         return out
-
 
 # ═══════════════════════════════════════════════════════════════════
 # Full Model
