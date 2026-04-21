@@ -202,36 +202,15 @@ class GravNetDGNLayer(nn.Module):
         agg_max = scatter_max(m, dst, dim=0, dim_size=N)[0]
 
         if self.use_dgn:
-            # ═══════════════════════════════════════════════════════════
-            # DGN Z-directional field
-            #
-            # Raw field:      F_{i,j} = z_j - z_i
-            # Row-L1 norm:    F̂_{i,j} = F_{i,j} / Σ_j |F_{i,j}|
-            #
-            # Note: edges are directed src→dst in PyG. We aggregate AT dst,
-            # so for each dst node i, its row Ĥ_{i,:} is built from edges
-            # where dst == i, i.e. incoming edges. The "row" node is dst.
-            # ═══════════════════════════════════════════════════════════
             dz = z[src] - z[dst]                              # (E,)
             # Row-wise L1 norm: sum |dz| over edges grouped by dst (the row node)
             row_L1 = scatter_sum(dz.abs(), dst, dim=0, dim_size=N)
             F_hat = dz / (row_L1[dst] + 1e-8)                 # (E,) — this is F̂
 
-            # ─── B_av: smoothing (eq. 5) ───
-            # (B_av · m)_i = Σ_{j ∈ N(i)} |F̂_{i,j}| · m_j
-            # F̂ is already row-L1-normalized, so weights |F̂| sum to 1 per row.
-            # Use scatter_SUM, not scatter_mean.
             agg_smooth = scatter_sum(
                 m * F_hat.abs().unsqueeze(-1), dst, dim=0, dim_size=N
             )
 
-            # ─── B_dx: centered directional derivative (eq. 6) ───
-            # (B_dx · x)_i = Σ_j F̂_{i,j} · m_j  -  (Σ_j F̂_{j,i}) · x_i
-            #              └─ off-diagonal term ┘    └ diagonal correction ┘
-            #
-            # Column sum Σ_j F̂_{j,i}: for each node i, sum F̂ over edges where
-            # i appears as the SOURCE (i.e. i is column index in another row).
-            # → scatter on `src` with dim_size=N.
             col_sum = scatter_sum(F_hat, src, dim=0, dim_size=N)   # (N,)
 
             off_diag = scatter_sum(
