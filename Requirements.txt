@@ -1,0 +1,14 @@
+torch
+torch-geometric
+torch-scatter
+torch-cluster
+torchmetrics
+numpy
+pandas
+scikit-learn
+matplotlib
+plotly
+PyYAML
+yacs
+tqdm
+ninja
