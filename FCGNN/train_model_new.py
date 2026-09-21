@@ -111,6 +111,8 @@ def run_epoch(model, loader, device, crit, opt=None):
     train = opt is not None
     model.train(train)
     total_loss, correct, total = 0.0, 0, 0
+    class_correct = [0, 0, 0, 0]
+    class_total = [0, 0, 0, 0]
 
     for batch in tqdm(loader, leave=False, desc="Training" if train else "Evaluating"):
         batch = batch.to(device, non_blocking=True)
@@ -129,9 +131,20 @@ def run_epoch(model, loader, device, crit, opt=None):
         correct += (pred == batch.y).sum().item()
         total += batch.y.size(0)
 
+        for c in range(4):
+            mask = (batch.y == c)
+            class_correct[c] += (pred[mask] == c).sum().item()
+            class_total[c] += mask.sum().item()
+
     avg_loss = total_loss / max(total, 1)
     acc = correct / max(total, 1)
-    return avg_loss, acc
+
+    class_acc = [
+        class_correct[c] / max(class_total[c], 1)
+        for c in range(4)
+    ]
+    
+    return avg_loss, acc, class_acc
 
 
 # -------------------- GraphGym cfg setup --------------------
@@ -368,13 +381,18 @@ if __name__ == "__main__":
         if is_distributed_run():
             train_loader.sampler.set_epoch(epoch)  # type: ignore[attr-defined]
 
-        tr_loss, tr_acc = run_epoch(model, train_loader, device, crit, opt=opt)
-        va_loss, va_acc = run_epoch(model, val_loader, device, crit, opt=None)
+        tr_loss, tr_acc, tr_class_acc = run_epoch(model, train_loader, device, crit, opt=opt)
+        va_loss, va_acc, va_class_acc = run_epoch(model, val_loader, device, crit, opt=None)
 
         if rank == 0:
             print(
                 f"Epoch {epoch+1:02d} | train: Loss {tr_loss:.4f} | Acc {tr_acc:.3f} "
                 f"|| val: Loss {va_loss:.4f} | Acc {va_acc:.3f}"
+            )
+            print(
+                f"Epoch {epoch+1:02d} | "
+                f"train Acc {tr_acc:.3f} [{', '.join(f'{x:.3f}' for x in tr_class_acc)}] | "
+                f"val Acc {va_acc:.3f} [{', '.join(f'{x:.3f}' for x in va_class_acc)}]"
             )
             train_loss_hist.append(tr_loss)
             train_acc_hist.append(tr_acc)
