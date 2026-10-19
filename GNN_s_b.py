@@ -26,11 +26,6 @@ class GNN_signal_background:
                     'neu_20_30', 'neu_30_40', 'neu_40_50',
                     'neu_50_60', 'neu_60_70', 'neu_70_80',
                     'neu_80_90', 'neu_90_100'] # Path directory of Neutrons
-        
-        # for i in tqdm(range(500), desc="Adding files to TChain"):
-        #     self.tree.Add((f"{self.input_path}/{i}/sndLHC.Genie-TGeant4_digCPP.root"))
-        # kaons_path = f'{self.path_start}{k}/{self.kaons[row]}{self.path_end}{column}/{self.files_name_kaons}'
-        # neutrons_path = f'{self.path_start}{n}/{self.neutrons[row]}{self.path_end}{column}/{self.files_name_neutrons}'
 
         for i in tqdm(range(ranges_s[0], ranges_s[1]), desc="Adding files to TChain: Signal", leave=False):
             if i == 40: continue
@@ -44,14 +39,6 @@ class GNN_signal_background:
         self.geo = SndlhcGeo.GeoInterface(geo)
         self.Scifi = self.geo.modules['Scifi']
         self.Mufi = self.geo.modules['MuFilter']
-
-        # self.geo_s = SndlhcGeo.GeoInterface(geo_s)
-        # self.Scifi_s = self.geo_s.modules['Scifi']
-        # self.Mufi_s = self.geo_s.modules['MuFilter']
-
-        # self.geo_b = SndlhcGeo.GeoInterface(geo_b)
-        # self.Scifi_b = self.geo_b.modules['Scifi']
-        # self.Mufi_b = self.geo_b.modules['MuFilter']
 
         self.n_sys = {1: 'veto', 2: 'us', 3: 'ds', 4: 'scifi'}
         # self.classifier = NC_CC(self.tree)
@@ -133,20 +120,13 @@ class GNN_signal_background:
                     self.Scifi.GetSiPMPosition(detID, A, B) # A is left(top), B is right(bottom)
                     # t = hits.GetTime(0)
 
-                    # if s_b == 1:
-                    #     self.Scifi_s.GetSiPMPosition(detID, A, B) # A is left(top), B is right(bottom)
-                    # elif s_b == 0:
-                    #     self.Scifi_b.GetSiPMPosition(detID, A, B) # A is left(top), B is right(bottom)
-                    # print(f"Event {i}: station={station}, Scifi, vert={vert}, energy={energy}")
-                    # count+=1
-                    # if count > 10: break
-
                     if vert:
                         n_hits['XY'].append((A.X() + B.X()) / 2)
                         n_hits['Z'].append((A.Z() + B.Z()) / 2)
                         n_hits['Energy'].append(energy)
                         n_hits['dettype'].append(4)
                         n_hits['verticle'].append(vert)
+                        # Add QDC line here
                         # n_hits['time'].append(t)
 
                     else:
@@ -155,6 +135,7 @@ class GNN_signal_background:
                         n_hits['Energy'].append(energy)
                         n_hits['dettype'].append(4)
                         n_hits['verticle'].append(vert)
+                        # Add QDC line here
                         # n_hits['time'].append(t)
                     
                 for hits in tree.Digi_MuFilterHits:
@@ -180,6 +161,7 @@ class GNN_signal_background:
                         n_hits['Energy'].append(energy)
                         n_hits['dettype'].append(system)
                         n_hits['verticle'].append(vert)
+                        # Add QDC line here
                         # n_hits['time'].append(self.get_mufi_time_avg(hits))
 
                     else:
@@ -188,6 +170,7 @@ class GNN_signal_background:
                         n_hits['Energy'].append(energy)
                         n_hits['dettype'].append(system)
                         n_hits['verticle'].append(vert)
+                        # Add QDC line here
                         # n_hits['time'].append(self.get_mufi_time_avg(hits))
 
                 stacked = np.column_stack([ n_hits[s] for s in plane ]).astype(np.float64)   # (N, row, 5)
@@ -224,20 +207,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     inputs_path_b = '/eos/experiment/sndlhc/MonteCarlo/NeutralHadrons/FTFP_BERT'
-    # input_path_s = "/eos/user/s/schuetha/MC_nu"
     input_path_s  = "/eos/experiment/sndlhc/MonteCarlo/Neutrinos/Genie/sndlhc_13TeV_down_volTarget_100fb-1_SNDG18_02a_01_000"
     input_path_ss = "/eos/user/s/schuetha/2022_MC"
 
     ranges_s = { 'train': (0, 400), 'val': (251, 350), 'predic': (351, 400) }[args.mode]
     ranges_b = { 'train': (1, 25),  'val': (101, 175), 'predic': (176, 400) }[args.mode]
-
-    # self.files_name_neutrons = 'sndLHC.PG_2112-TGeant4_digCPP.root'
-    # self.files_name_kaons = 'sndLHC.PG_130-TGeant4_digCPP.root'
-    # self.path_end = '/Ntuples/'
-    # kaons_path = f'{self.path_start}{k}/{self.kaons[row]}{self.path_end}{column}/{self.files_name_kaons}'
-    # neutrons_path = f'{self.path_start}{n}/{self.neutrons[row]}{self.path_end}{column}/{self.files_name_neutrons}'
-    # k = 'kaons'
-    # n = 'neutrons'
 
     outputs = '/eos/user/s/schuetha/signal_background_data_new_dataset_with_time_new'
     geo = "/eos/experiment/sndlhc/convertedData/physics/2022/geofile_sndlhc_TI18_V0_2022.root"
